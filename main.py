@@ -48,7 +48,13 @@ class movie(Resource):
         info['2']=overview_dict
         return jsonify(info)
 
-api.add_resource(movie,'/moviename/<string:s>')
-
+api.add_resource(movie,'/<string:s>')
+class status (Resource):
+    def get(self):
+        try:
+            return {'data': 'Api is Running'}
+        except:
+            return {'data': 'An Error Occurred during fetching Api'}
+api.add_resource(status,'/')
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run()
