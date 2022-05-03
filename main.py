@@ -56,5 +56,11 @@ class status (Resource):
         except:
             return {'data': 'An Error Occurred during fetching Api'}
 api.add_resource(status,'/')
+
+class Sum(Resource):
+    def get(self, a, b):
+        return jsonify({'data': a+b})
+api.add_resource(Sum, '/add/<int:a>,<int:b>')
+
 if __name__ == "__main__":
     app.run()
