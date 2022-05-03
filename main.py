@@ -10,6 +10,7 @@ from load_data import Movie_Recommender
 '''Loading the Data and Creating the instance for the model'''
 from load_data import Movie_Recommender
 Recommender = Movie_Recommender()
+Recommender.clean()
 Recommender.prepare()
 
 app = Flask(__name__)

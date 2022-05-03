@@ -3,15 +3,31 @@ import pandas as pd
 from scipy.sparse import csr_matrix
 import pickle
 from sklearn.neighbors import NearestNeighbors as KNN
-
+import re
 class Movie_Recommender():
     def __init__(self):
         self.movies = pd.read_csv('./data/movies.csv')
         self.ratings = pd.read_csv('./data/ratings.csv')
         self.final_dataset = None
         self.final = None
-        self.knn = pickle.load(open('./Model/finalized_model.sav','rb'))
+        self.knn = pickle.load(open('./Model/knn_movies.sav','rb'))
         #self.knn = None
+    def clean(self):
+        for i in range(len(self.movies)):
+            temp = self.movies['title'][i].split()[:-1]
+            s = ''
+            for j in temp:
+                s+=j+" "
+            temp = s
+            s = ''
+            re.sub(r"[\([{})\]]", "", temp)
+            for j in temp.split(',')[::-1]:
+                s+=j
+            temp = s
+            temp = temp.strip()
+            temp = temp.lower()
+            re.sub('[^A-Za-z0-9]+', '', temp)
+            self.movies['title'][i] = temp
     def prepare(self):
         self.final_dataset = self.ratings.pivot(index='movieId',columns='userId',values='rating')
 
@@ -19,12 +35,13 @@ class Movie_Recommender():
 
         self.final_dataset.head()
 
-        no_user_voted = self.ratings.groupby('movieId')['rating'].agg('count')
-        no_movies_voted = self.ratings.groupby('userId')['rating'].agg('count')
+        #this part is required for the next part of the code
+        #no_user_voted = self.ratings.groupby('movieId')['rating'].agg('count')
+        #no_movies_voted = self.ratings.groupby('userId')['rating'].agg('count')
 
-
-        self.final_dataset = self.final_dataset.loc[no_user_voted[no_user_voted > 10].index,:]
-        self.final_dataset = self.final_dataset.loc[:,no_movies_voted[no_movies_voted > 50].index]
+        # considering only users who have voted more than 10 and movies being voted more than 50.
+        #self.final_dataset = self.final_dataset.loc[no_user_voted[no_user_voted > 10].index,:]
+        #self.final_dataset = self.final_dataset.loc[:,no_movies_voted[no_movies_voted > 50].index]
 
         
         self.final = csr_matrix(self.final_dataset)
@@ -50,28 +67,20 @@ class Movie_Recommender():
         else:
             return "No movies found. Please check your input"
     def recommend(self,movie_name):
+        movie_name = movie_name.lower()
         temp = self.find_reccs(movie_name)
         if(type(temp) == type('Zaid')):
             return ['']
         temp = temp.iloc[:,0:1].values
         mobie = []
         for i in range(len(temp)):
-            temp[i][0] = temp[i][0].split()[:-1]
-            s = ''
-            for j in temp[i][0]:
-                s+=j+" "
-            temp[i] = s
-            s = ''
-            for j in temp[i][0].split(',')[::-1]:
-                s+=j
-            mobie.append(s)
-        for i in range(len(mobie)):
-            mobie[i] = mobie[i].strip()
+            mobie.append(temp[i][0])
         return mobie
 
         
 if __name__ == '__main__':
     Recommender = Movie_Recommender()
+    Recommender.clean()
     Recommender.prepare()
     print(Recommender.recommend("Iron Man"))
         
