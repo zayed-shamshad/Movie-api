@@ -14,9 +14,9 @@ Recommender.clean()
 Recommender.prepare()
 
 app = Flask(__name__)
-
 api = Api(app)
 CORS(app)
+
 '''app.config.from_object(__name__)
 CORS(app, resources={r"/*":{'origins':"*"}})
 #CORS(app, resources={r'/*':{'origins': 'http://localhost:3000',"allow_headers": "Access-Control-Allow-Origin"}})

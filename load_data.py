@@ -27,7 +27,7 @@ class Movie_Recommender():
             temp = temp.strip()
             temp = temp.lower()
             re.sub('[^A-Za-z0-9]+', '', temp)
-            self.movies['title'][i] = temp
+            self.movies.at[i,'title'] = temp
     def prepare(self):
         self.final_dataset = self.ratings.pivot(index='movieId',columns='userId',values='rating')
 
