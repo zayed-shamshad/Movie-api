@@ -82,7 +82,7 @@ if __name__ == '__main__':
     Recommender = Movie_Recommender()
     Recommender.clean()
     Recommender.prepare()
-    print(Recommender.recommend("Iron Man"))
+    print(Recommender.recommend("Batman"))
         
         
 
