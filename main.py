@@ -1,8 +1,8 @@
 from unittest import result
-from flask import Flask, jsonify, request 
+from flask import Flask, jsonify, request
 from flask_cors import CORS
 from numpy import result_type
-import requests 
+import requests
 import json
 from flask_restful import Resource, Api
 from load_data import Movie_Recommender
