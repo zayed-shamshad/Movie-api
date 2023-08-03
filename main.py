@@ -1,14 +1,16 @@
-from unittest import result
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, make_response, request
 from flask_cors import CORS
-from numpy import result_type
 import requests
-import json
+import os
+import logging
 from flask_restful import Resource, Api
 from load_data import Movie_Recommender
+from dotenv import load_dotenv
 
-'''Loading the Data and Creating the instance for the model'''
-from load_data import Movie_Recommender
+# Load environment variables from .env file
+load_dotenv()
+
+# Initialize the Movie_Recommender
 Recommender = Movie_Recommender()
 Recommender.clean()
 Recommender.prepare()
@@ -17,45 +19,168 @@ app = Flask(__name__)
 api = Api(app)
 CORS(app)
 
-'''app.config.from_object(__name__)
-CORS(app, resources={r"/*":{'origins':"*"}})
-#CORS(app, resources={r'/*':{'origins': 'http://localhost:3000',"allow_headers": "Access-Control-Allow-Origin"}})
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-@app.route('/<string:s>',methods=['GET'])'''
+# Load API key from environment variable
+API_KEY = os.environ.get("TMDB_API_KEY")
+if not API_KEY:
+    logger.error("TMDB_API_KEY environment variable not set")
+    exit(1)
 
-class movie(Resource):
-    def get(self,s):
-        result_list = Recommender.recommend(s)
-        result_dict = {}
-        for i in range(len(result_list)):
-            result_dict[i] = result_list[i]
-        
-        #result={1:"Batman",2:"Superman",3:"Iron-man",4:"Hulk",5:"Thor",6:"Loki",7:"Spiderman",8:"Captain-America",9:"IT",10:"Joker"}
-        image_dict = {}
-        overview_dict={}
-        for movie_names in result_list:
-            r = requests.get("https://api.themoviedb.org/3/search/movie?api_key=80a99c25c9f9f65e580f9c9e19d1d737&query="+movie_names+ "&callback=?")
-            content=r.text
-            p=str(content)
-            k=p[2:len(p)-1]
-            m=json.loads(k)
-            f=str(m['results'][0]['poster_path'])
-            path_name='http://image.tmdb.org/t/p/w500/'+f
-            overview=str(m['results'][0]['overview'])
-            image_dict[movie_names] = path_name
-            overview_dict[movie_names]=overview
-        info={}
-        info['1']=image_dict
-        info['2']=overview_dict
-        return jsonify(info)
-
-api.add_resource(movie,'/<string:s>')
-class status (Resource):
+class Movie(Resource):
     def get(self):
         try:
-            return {'data': 'Api is Running'}
-        except:
-            return {'data': 'An Error Occurred during fetching Api'}
-api.add_resource(status,'/')
+            info = []  # Initialize as a list
+            query_param = request.args.get("s")
+            if not query_param:
+                return {'message': 'Missing "s" query parameter'}, 400
+            result_list = Recommender.recommend(query_param)
+            for movie_name in result_list:
+                url = f"https://api.themoviedb.org/3/search/movie?query={movie_name}"
+                headers = {
+                    "accept": "application/json",
+                    "Authorization": f"Bearer {API_KEY}"
+                }
+
+                r = requests.get(url, headers=headers)
+                logger.info(f"API call for '{movie_name}' - Status code: {r.status_code}")
+
+                if r.status_code == 200:
+                    data = r.json()
+                    if data['results']:
+                        # Extract necessary information from the API response
+                        movie_info = {
+                            'id': data['results'][0]['id'],  # Use this ID to get more information about the movie
+                            'title': data['results'][0]['title'],
+                            'poster_path': f"http://image.tmdb.org/t/p/w500/{data['results'][0]['poster_path']}",
+                            'overview': data['results'][0]['overview']
+                        }
+                        info.append(movie_info)
+                    else:
+                        logger.warning(f"No results found for movie: {movie_name}")
+                else:
+                    logger.error(f"Error occurred for movie: {movie_name}")
+
+            return make_response(jsonify(info), 200)
+
+        except Exception as e:
+            logger.exception(f"An error occurred while processing the request: {e}")
+            return {'message': 'An error occurred during processing the request'}, 500
+
+class Status(Resource):
+    def get(self):
+        return {'data': 'API is Running'
+                
+                }
+class Movie_Trending(Resource):
+    def get(self):
+        url = f"https://api.themoviedb.org/3/trending/movie/day"
+        headers = {
+            "accept": "application/json",
+            "Authorization": f"Bearer {API_KEY}"
+        }
+        r = requests.get(url, headers=headers)
+        logger.info(f"API call for Trending' - Status code: {r.status_code}")
+
+        if r.status_code == 200:
+            return make_response(jsonify(r.json()), 200)
+        else:
+            logger.error(f"Error occurred for Trending")
+            return {'message': 'An error occurred during processing the request'}, 500
+class Movie_Upcoming(Resource):
+    def get(self):
+        url = f"https://api.themoviedb.org/3/movie/upcoming"
+        headers = {
+            "accept": "application/json",
+            "Authorization": f"Bearer {API_KEY}"
+        }
+        r = requests.get(url, headers=headers)
+        logger.info(f"API call for Trending' - Status code: {r.status_code}")
+
+        if r.status_code == 200:
+            return make_response(jsonify(r.json()), 200)
+        else:
+            logger.error(f"Error occurred for Trending")
+            return {'message': 'An error occurred during processing the request'}, 500
+
+class Movie_Nowplaying(Resource):
+    def get(self):
+        url = f"https://api.themoviedb.org/3/movie/now_playing"
+        headers = {
+            "accept": "application/json",
+            "Authorization": f"Bearer {API_KEY}"
+        }
+        r = requests.get(url, headers=headers)
+        logger.info(f"API call for Trending' - Status code: {r.status_code}")
+
+        if r.status_code == 200:
+            return make_response(jsonify(r.json()), 200)
+        else:
+            logger.error(f"Error occurred for Trending")
+            return {'message': 'An error occurred during processing the request'}, 500
+class Movie_Toprated(Resource):
+    def get(self):
+        url = f"https://api.themoviedb.org/3/movie/top_rated"
+        headers = {
+            "accept": "application/json",
+            "Authorization": f"Bearer {API_KEY}"
+        }
+        r = requests.get(url, headers=headers)
+        logger.info(f"API call for Trending' - Status code: {r.status_code}")
+
+        if r.status_code == 200:
+            return make_response(jsonify(r.json()), 200)
+        else:
+            logger.error(f"Error occurred for Trending")
+            return {'message': 'An error occurred during processing the request'}, 500
+class Movie_trailer(Resource):
+    def get(self):
+        id=request.args.get("id")
+        url = f"https://api.themoviedb.org/3/movie/{id}+/videos"
+
+        headers = {
+            "accept": "application/json",
+            "Authorization": f"Bearer {API_KEY}"
+        }
+        r = requests.get(url, headers=headers)
+        logger.info(f"API call for Trending' - Status code: {r.status_code}")
+
+        if r.status_code == 200:
+            return make_response(jsonify(r.json()), 200)
+        else:
+            logger.error(f"Error occurred for Trending")
+            return {'message': 'An error occurred during processing the request'}, 500
+class Movie_data(Resource):
+    def get(self):
+        movie_id=request.args.get("movie_id")
+        url = f"https://api.themoviedb.org/3/movie/{movie_id}"
+
+        headers = {
+            "accept": "application/json",
+            "Authorization": f"Bearer {API_KEY}"
+        }
+        r = requests.get(url, headers=headers)
+        logger.info(f"API call for Trending' - Status code: {r.status_code}")
+
+        if r.status_code == 200:
+            return make_response(jsonify(r.json()), 200)
+        else:
+            logger.error(f"Error occurred for Trending")
+            return {'message': 'An error occurred during processing the request'}, 500
+        
+
+api.add_resource(Movie, '/movie')
+api.add_resource(Status, '/')
+api.add_resource(Movie_Trending,'/trending')
+api.add_resource(Movie_Upcoming,'/upcoming')
+api.add_resource(Movie_Nowplaying,'/nowplaying')
+api.add_resource(Movie_Toprated,'/toprated')
+api.add_resource(Movie_trailer,'/trailer')
+api.add_resource(Movie_data,'/movie_data')
+
+
 if __name__ == "__main__":
+    # Start the Flask app
     app.run()
