@@ -5,10 +5,10 @@ import os
 import logging
 from flask_restful import Resource, Api
 from load_data import Movie_Recommender
-from dotenv import load_dotenv
+# from dotenv import load_dotenv
 
 # Load environment variables from .env file
-load_dotenv()
+# load_dotenv()
 
 # Initialize the Movie_Recommender
 Recommender = Movie_Recommender()
@@ -24,7 +24,8 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Load API key from environment variable
-API_KEY = os.environ.get("TMDB_API_KEY")
+# API_KEY = os.environ.get("TMDB_API_KEY")
+API_KEY=os.getenv("TMDB_API_KEY")
 if not API_KEY:
     logger.error("TMDB_API_KEY environment variable not set")
     exit(1)
